@@ -84,45 +84,54 @@ class _CreateShopScreenState extends ConsumerState<CreateShopScreen> {
         throw Exception('User not authenticated');
       }
 
-      // Create profile if not exists
+      // Step 1: Create or update profile
       await supabase.from('profiles').upsert({
         'id': user.id,
-        'phone': user.phone,
+        'phone': _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
         'name': _nameController.text.trim(),
+      }, onConflict: 'id');
+
+      // Step 2: Create tenant (shop)
+      final tenantResponse = await supabase.from('tenants').insert({
+        'name': _nameController.text.trim(),
+        'shop_type': _selectedType,
+        'phone': _phoneController.text.trim(),
+        'address': _addressController.text.trim(),
+        'gstin': _gstinController.text.trim().isEmpty ? null : _gstinController.text.trim(),
+        'is_active': true,
+      }).select().single();
+
+      final tenantId = tenantResponse['id'];
+
+      // Step 3: Create membership (link user to tenant as owner)
+      await supabase.from('memberships').insert({
+        'tenant_id': tenantId,
+        'user_id': user.id,
+        'role': 'owner',
+        'is_active': true,
       });
 
-      // Call create-tenant edge function
-      final response = await supabase.functions.invoke(
-        'create-tenant',
-        body: {
-          'name': _nameController.text.trim(),
-          'shop_type': _selectedType,
-          'phone': _phoneController.text.trim(),
-          'address': {'full': _addressController.text.trim()},
-          'gstin': _gstinController.text.trim(),
-          'template_key': _shopTypes[_selectedType]!['template'],
-        },
+      if (!mounted) return;
+      
+      // Show success and navigate
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Shop created successfully!'),
+          backgroundColor: AppTheme.successColor,
+        ),
       );
-
-      if (response.status == 200) {
-        if (!mounted) return;
-        
-        // Show success and navigate
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Shop created successfully!'),
-            backgroundColor: AppTheme.successColor,
-          ),
-        );
-        
-        // Small delay to let user see success message
-        await Future.delayed(const Duration(seconds: 1));
-        
-        if (!mounted) return;
-        context.go('/home');
-      } else {
-        throw Exception('Failed to create shop');
-      }
+      
+      // Small delay to let user see success message
+      await Future.delayed(const Duration(seconds: 1));
+      
+      if (!mounted) return;
+      context.go('/home');
+      
+    } on PostgrestException catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Database error: ${e.message}';
+      });
     } catch (e) {
       setState(() {
         _isLoading = false;

@@ -1,6 +1,5 @@
-// Login screen with phone OTP
+// Login screen with email/password authentication
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -15,24 +14,47 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _phoneController = TextEditingController();
-  final _otpController = TextEditingController();
-  bool _isOtpSent = false;
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isLogin = true; // true for login, false for signup
   bool _isLoading = false;
+  bool _obscurePassword = true;
   String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    _setupAuthListener();
+  }
+
+  void _setupAuthListener() {
+    // Listen for auth state changes (handles magic link login)
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final session = data.session;
+      if (session != null && mounted) {
+        _handleSuccessfulLogin();
+      }
+    });
+  }
+
+  @override
   void dispose() {
-    _phoneController.dispose();
-    _otpController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _sendOtp() async {
-    final phone = _phoneController.text.trim();
+  Future<void> _handleAuth() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
     
-    if (phone.length != 10) {
-      setState(() => _errorMessage = 'Enter valid 10-digit phone number');
+    if (!_isValidEmail(email)) {
+      setState(() => _errorMessage = 'Enter a valid email address');
+      return;
+    }
+
+    if (password.length < 6) {
+      setState(() => _errorMessage = 'Password must be at least 6 characters');
       return;
     }
 
@@ -42,72 +64,101 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
-      final phoneWithCode = '+91$phone';
-      await Supabase.instance.client.auth.signInWithOtp(
-        phone: phoneWithCode,
-      );
-
-      setState(() {
-        _isOtpSent = true;
-        _isLoading = false;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('OTP sent successfully!'),
-            backgroundColor: AppTheme.successColor,
-          ),
+      if (_isLogin) {
+        // Login
+        final response = await Supabase.instance.client.auth.signInWithPassword(
+          email: email,
+          password: password,
         );
+        
+        if (response.session != null) {
+          await _handleSuccessfulLogin();
+        }
+      } else {
+        // Sign up with email confirmation disabled
+        final response = await Supabase.instance.client.auth.signUp(
+          email: email,
+          password: password,
+          emailRedirectTo: null, // Disable email confirmation redirect
+        );
+        
+        // Check if signup was successful
+        if (response.user != null) {
+          if (response.session != null) {
+            // Auto-confirmed, proceed to login
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Account created successfully!'),
+                  backgroundColor: AppTheme.successColor,
+                ),
+              );
+            }
+            await _handleSuccessfulLogin();
+          } else {
+            // Email confirmation required
+            setState(() => _isLoading = false);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Please check your email to confirm your account, then login.'),
+                  backgroundColor: AppTheme.successColor,
+                  duration: Duration(seconds: 6),
+                ),
+              );
+              // Switch to login mode
+              setState(() => _isLogin = true);
+            }
+          }
+        }
       }
+      
+    } on AuthException catch (e) {
+      setState(() {
+        _isLoading = false;
+        if (e.message.contains('Invalid login credentials')) {
+          _errorMessage = 'Invalid email or password. If you just signed up, please confirm your email first.';
+        } else if (e.message.contains('Email not confirmed')) {
+          _errorMessage = 'Please confirm your email before logging in. Check your inbox.';
+        } else if (e.message.contains('User already registered')) {
+          _errorMessage = 'This email is already registered. Please login instead.';
+          _isLogin = true;
+        } else {
+          _errorMessage = e.message;
+        }
+      });
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Failed to send OTP: ${e.toString()}';
+        _errorMessage = e.toString();
       });
     }
   }
 
-  Future<void> _verifyOtp() async {
-    final phone = _phoneController.text.trim();
-    final otp = _otpController.text.trim();
-
-    if (otp.length != 6) {
-      setState(() => _errorMessage = 'Enter 6-digit OTP');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
+  Future<void> _handleSuccessfulLogin() async {
     try {
-      final phoneWithCode = '+91$phone';
-      final response = await Supabase.instance.client.auth.verifyOTP(
-        type: OtpType.sms,
-        phone: phoneWithCode,
-        token: otp,
-      );
-
-      if (response.session != null) {
-        // Check if user has a tenant
-        final hasTenant = await _checkUserTenant();
-        
-        if (!mounted) return;
-        
-        if (hasTenant) {
-          context.go('/home');
-        } else {
-          context.go('/create-shop');
-        }
+      // Check if user has a tenant
+      final hasTenant = await _checkUserTenant();
+      
+      if (!mounted) return;
+      
+      setState(() => _isLoading = false);
+      
+      if (hasTenant) {
+        context.go('/home');
+      } else {
+        context.go('/create-shop');
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Invalid OTP: ${e.toString()}';
+        _errorMessage = 'Login successful but failed to load data';
       });
     }
+  }
+
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
 
   Future<bool> _checkUserTenant() async {
@@ -139,7 +190,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Logo
-                Icon(
+                const Icon(
                   Icons.store,
                   size: 80,
                   color: AppTheme.primaryColor,
@@ -168,52 +219,103 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 
                 const SizedBox(height: 48),
                 
-                // Phone number input
+                // Login/Signup toggle
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() {
+                            _isLogin = true;
+                            _errorMessage = null;
+                          }),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: _isLogin ? AppTheme.primaryColor : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Login',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: _isLogin ? Colors.white : Colors.grey[700],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setState(() {
+                            _isLogin = false;
+                            _errorMessage = null;
+                          }),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: !_isLogin ? AppTheme.primaryColor : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Sign Up',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: !_isLogin ? Colors.white : Colors.grey[700],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Email input
                 TextField(
-                  controller: _phoneController,
-                  enabled: !_isOtpSent && !_isLoading,
-                  keyboardType: TextInputType.phone,
-                  maxLength: 10,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
-                  decoration: InputDecoration(
-                    labelText: 'Mobile Number',
-                    hintText: '9876543210',
-                    prefixIcon: const Icon(Icons.phone),
-                    prefixText: '+91 ',
-                    counterText: '',
+                  controller: _emailController,
+                  enabled: !_isLoading,
+                  keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
+                  textCapitalization: TextCapitalization.none,
+                  decoration: const InputDecoration(
+                    labelText: 'Email Address',
+                    hintText: 'your@email.com',
+                    prefixIcon: Icon(Icons.email),
                   ),
                 ),
                 
                 const SizedBox(height: 16),
                 
-                // OTP input (shown after OTP sent)
-                if (_isOtpSent) ...[
-                  TextField(
-                    controller: _otpController,
-                    enabled: !_isLoading,
-                    keyboardType: TextInputType.number,
-                    maxLength: 6,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
-                    decoration: const InputDecoration(
-                      labelText: 'Enter OTP',
-                      hintText: '123456',
-                      prefixIcon: Icon(Icons.lock),
-                      counterText: '',
+                // Password input
+                TextField(
+                  controller: _passwordController,
+                  enabled: !_isLoading,
+                  obscureText: _obscurePassword,
+                  autocorrect: false,
+                  textCapitalization: TextCapitalization.none,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    hintText: 'Enter your password',
+                    prefixIcon: const Icon(Icons.lock),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: _isLoading ? null : () {
-                      setState(() => _isOtpSent = false);
-                      _otpController.clear();
-                    },
-                    child: const Text('Change number'),
-                  ),
-                ],
+                ),
                 
                 const SizedBox(height: 24),
                 
@@ -246,11 +348,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 SizedBox(
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _isLoading
-                        ? null
-                        : _isOtpSent
-                            ? _verifyOtp
-                            : _sendOtp,
+                    onPressed: _isLoading ? null : _handleAuth,
                     child: _isLoading
                         ? const SizedBox(
                             width: 24,
@@ -260,7 +358,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               color: Colors.white,
                             ),
                           )
-                        : Text(_isOtpSent ? 'Verify OTP' : 'Send OTP'),
+                        : Text(_isLogin ? 'Login' : 'Sign Up'),
                   ),
                 ),
                 

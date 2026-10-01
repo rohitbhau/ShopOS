@@ -5,12 +5,12 @@ class Env {
   // Supabase
   static const String supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
-    defaultValue: 'https://your-project.supabase.co',
+    defaultValue: 'https://dmqsutuniayqtfsaxjuq.supabase.co',
   );
   
   static const String supabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
-    defaultValue: 'your-anon-key',
+    defaultValue: 'sb_publishable_Na2Ql0HkKp9enLLBWYTOsQ_sJx9GnIr',
   );
   
   // Razorpay
