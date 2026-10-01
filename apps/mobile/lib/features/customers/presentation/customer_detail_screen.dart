@@ -74,7 +74,7 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
           .select()
           .eq('tenant_id', tenantId)
           .eq('entity_id', invoiceEntityId)
-          .is_('deleted_at', null)
+          
           .order('created_at', ascending: false);
 
       final transactionsList = <Transaction>[];

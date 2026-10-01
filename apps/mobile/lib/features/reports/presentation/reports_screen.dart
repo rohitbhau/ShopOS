@@ -93,7 +93,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
           .eq('entity_id', invoiceEntityId)
           .gte('created_at', todayStart.toIso8601String())
           .lt('created_at', todayEnd.toIso8601String())
-          .is_('deleted_at', null);
+          ;
 
       // Calculate today's stats
       double totalSales = 0;
@@ -118,7 +118,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
         for (final item in items) {
           final productId = item['product_id'];
           final name = item['name'];
-          final quantity = item['quantity'] ?? 0;
+          final quantity = (item['quantity'] ?? 0) as int;
           final itemTotal = (item['total'] ?? 0).toDouble();
 
           if (productSales.containsKey(productId)) {
@@ -143,7 +143,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
           .eq('entity_id', invoiceEntityId)
           .gte('created_at', weekStart.toIso8601String())
           .lt('created_at', todayEnd.toIso8601String())
-          .is_('deleted_at', null);
+          ;
 
       final dailySalesMap = <String, double>{};
       for (var i = 0; i < 7; i++) {
@@ -174,7 +174,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
           .select()
           .eq('tenant_id', tenantId)
           .eq('entity_id', productEntityId)
-          .is_('deleted_at', null);
+          ;
 
       final lowStock = <LowStockItem>[];
       for (final product in products) {

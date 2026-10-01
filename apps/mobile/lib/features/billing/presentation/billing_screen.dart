@@ -69,7 +69,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
           .select()
           .eq('tenant_id', tenantId)
           .eq('entity_id', entityId)
-          .is_('deleted_at', null)
+          
           .order('created_at', ascending: false);
 
       setState(() {
@@ -168,6 +168,17 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
       return;
     }
 
+    // Validate customer selection for credit sales
+    if (_paymentMode == 'credit' && _selectedCustomerId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a customer for credit sale'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+      return;
+    }
+
     // Show loading
     showDialog(
       context: context,
@@ -206,11 +217,14 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final invoiceNumber = 'INV-$deviceId-$timestamp';
 
+      final invoiceTotal = _getGrandTotal();
+
       // Prepare invoice data
       final invoiceData = {
         'invoice_number': invoiceNumber,
         'invoice_date': DateTime.now().toIso8601String(),
         'customer_id': _selectedCustomerId,
+        'customer_name': _selectedCustomerName,
         'items': _cart.map((item) => {
           'product_id': item.productId,
           'name': item.name,
@@ -221,8 +235,9 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
         }).toList(),
         'subtotal': _getSubtotal(),
         'tax_amount': _getTotalTax(),
-        'total': _getGrandTotal(),
+        'total': invoiceTotal,
         'payment_mode': _paymentMode,
+        'payment_status': _paymentMode == 'credit' ? 'pending' : 'paid',
       };
 
       // Save invoice
@@ -255,6 +270,64 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
             .eq('id', item.productId);
       }
 
+      // If credit sale, update customer outstanding
+      if (_paymentMode == 'credit' && _selectedCustomerId != null) {
+        // Get customer entity_id
+        final customerEntityResponse = await supabase
+            .from('entities')
+            .select('id')
+            .eq('name', 'customer')
+            .single();
+
+        final customerEntityId = customerEntityResponse['id'];
+
+        // Get customer record
+        final customerId = _selectedCustomerId!; // Non-null assertion safe here
+        final customerResponse = await supabase
+            .from('records')
+            .select()
+            .eq('id', customerId)
+            .single();
+
+        final customerData = customerResponse['data'] as Map<String, dynamic>;
+        final currentOutstanding = (customerData['outstanding'] ?? 0).toDouble();
+        final newOutstanding = currentOutstanding + invoiceTotal;
+
+        // Update customer outstanding
+        await supabase
+            .from('records')
+            .update({
+              'data': {...customerData, 'outstanding': newOutstanding},
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', customerId);
+
+        // Add transaction to ledger
+        final ledger = List<Map<String, dynamic>>.from(customerData['ledger'] ?? []);
+        ledger.insert(0, {
+          'date': DateTime.now().toIso8601String(),
+          'type': 'sale',
+          'invoice_number': invoiceNumber,
+          'description': 'Credit sale',
+          'debit': invoiceTotal,
+          'credit': 0,
+          'balance': newOutstanding,
+        });
+
+        // Update ledger (keep only last 100 transactions)
+        if (ledger.length > 100) {
+          ledger.removeRange(100, ledger.length);
+        }
+
+        await supabase
+            .from('records')
+            .update({
+              'data': {...customerData, 'ledger': ledger, 'outstanding': newOutstanding},
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('id', customerId);
+      }
+
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
 
@@ -275,9 +348,17 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
               children: [
                 Text('Invoice #: $invoiceNumber'),
                 const SizedBox(height: 8),
-                Text('Total: ₹${_getGrandTotal().toStringAsFixed(2)}'),
+                Text('Total: ₹${invoiceTotal.toStringAsFixed(2)}'),
                 const SizedBox(height: 8),
                 Text('Payment: ${_paymentMode.toUpperCase()}'),
+                if (_paymentMode == 'credit')
+                  Text(
+                    'Outstanding added to ${_selectedCustomerName}',
+                    style: const TextStyle(
+                      color: AppTheme.errorColor,
+                      fontSize: 12,
+                    ),
+                  ),
               ],
             ),
             actions: [
@@ -309,6 +390,90 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
             content: Text('Error: $e'),
             backgroundColor: AppTheme.errorColor,
           ),
+        );
+      }
+    }
+  }
+
+  Future<void> _selectCustomer() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+
+      if (user == null) return;
+
+      // Get tenant_id
+      final membership = await supabase
+          .from('memberships')
+          .select('tenant_id')
+          .eq('user_id', user.id)
+          .single();
+
+      final tenantId = membership['tenant_id'];
+
+      // Get customer entity_id
+      final entityResponse = await supabase
+          .from('entities')
+          .select('id')
+          .eq('name', 'customer')
+          .single();
+
+      final entityId = entityResponse['id'];
+
+      // Get customers
+      final response = await supabase
+          .from('records')
+          .select()
+          .eq('tenant_id', tenantId)
+          .eq('entity_id', entityId)
+          
+          .order('created_at', ascending: false);
+
+      final customers = List<Map<String, dynamic>>.from(response);
+
+      if (!mounted) return;
+
+      final selected = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Select Customer'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: customers.length,
+              itemBuilder: (context, index) {
+                final customer = customers[index];
+                final data = customer['data'] as Map<String, dynamic>;
+                return ListTile(
+                  leading: const CircleAvatar(child: Icon(Icons.person)),
+                  title: Text(data['name'] ?? ''),
+                  subtitle: Text(data['phone'] ?? ''),
+                  onTap: () => Navigator.pop(context, customer),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+          ],
+        ),
+      );
+
+      if (selected != null) {
+        final data = selected['data'] as Map<String, dynamic>;
+        setState(() {
+          _selectedCustomerId = selected['id'];
+          _selectedCustomerName = data['name'];
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load customers: $e')),
         );
       }
     }
@@ -491,6 +656,38 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
+                  // Customer selection (for credit sales)
+                  if (_paymentMode == 'credit')
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: InkWell(
+                        onTap: _selectCustomer,
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.person),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _selectedCustomerName ?? 'Select Customer',
+                                  style: TextStyle(
+                                    color: _selectedCustomerName != null
+                                        ? Colors.black
+                                        : Colors.grey,
+                                  ),
+                                ),
+                              ),
+                              const Icon(Icons.arrow_drop_down),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   // Payment mode
                   Row(
                     children: [
@@ -502,11 +699,16 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                             ButtonSegment(value: 'cash', label: Text('Cash')),
                             ButtonSegment(value: 'upi', label: Text('UPI')),
                             ButtonSegment(value: 'card', label: Text('Card')),
+                            ButtonSegment(value: 'credit', label: Text('Credit')),
                           ],
                           selected: {_paymentMode},
                           onSelectionChanged: (Set<String> newSelection) {
                             setState(() {
                               _paymentMode = newSelection.first;
+                              if (_paymentMode != 'credit') {
+                                _selectedCustomerId = null;
+                                _selectedCustomerName = null;
+                              }
                             });
                           },
                         ),

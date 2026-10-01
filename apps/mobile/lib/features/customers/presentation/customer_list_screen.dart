@@ -65,7 +65,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
           .select()
           .eq('tenant_id', tenantId)
           .eq('entity_id', entityId)
-          .is_('deleted_at', null)
+          
           .order('created_at', ascending: false);
 
       final customersList = response.map((record) {

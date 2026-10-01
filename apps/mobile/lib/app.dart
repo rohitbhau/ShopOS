@@ -10,6 +10,8 @@ import 'features/products/presentation/product_list_screen.dart';
 import 'features/billing/presentation/billing_screen.dart';
 import 'features/reports/presentation/reports_screen.dart';
 import 'features/customers/presentation/customer_list_screen.dart';
+import 'features/invoices/presentation/invoice_list_screen.dart';
+import 'features/settings/presentation/settings_screen.dart';
 
 class ShopOSApp extends ConsumerWidget {
   const ShopOSApp({Key? key}) : super(key: key);
@@ -73,7 +75,8 @@ class _HomeScreenState extends State<HomeScreen> {
     const ProductListScreen(),
     const BillingScreen(),
     const CustomerListScreen(),
-    const ReportsScreen(),
+    const InvoiceListScreen(),
+    const SettingsScreen(),
   ];
 
   @override
@@ -101,8 +104,12 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Customers',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.analytics),
-            label: 'Reports',
+            icon: Icon(Icons.receipt_long),
+            label: 'Invoices',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
           ),
         ],
       ),
@@ -180,6 +187,36 @@ class DashboardScreen extends StatelessWidget {
                   'Add Product',
                   Icons.add_box,
                   () => context.go('/products'),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 8),
+          
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionCard(
+                  context,
+                  'Reports',
+                  Icons.analytics,
+                  () {
+                    // Navigate to Reports screen (standalone)
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ReportsScreen()),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildActionCard(
+                  context,
+                  'Add Customer',
+                  Icons.person_add,
+                  () => context.go('/customers'),
                 ),
               ),
             ],
