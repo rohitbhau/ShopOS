@@ -1,0 +1,395 @@
+{
+  "key": "restaurant",
+  "name": "Restaurant",
+  "entities": [
+    {
+      "name": "product",
+      "label": "Product",
+      "icon": "file",
+      "is_system": true,
+      "schema": {
+        "entity": "product",
+        "fields": [
+          {
+            "name": "name",
+            "type": "text",
+            "label": "Name",
+            "required": true
+          },
+          {
+            "name": "barcode",
+            "type": "text",
+            "label": "Barcode"
+          },
+          {
+            "name": "price",
+            "type": "number",
+            "label": "Price",
+            "required": true,
+            "min": 0
+          },
+          {
+            "name": "cost",
+            "type": "number",
+            "label": "Cost",
+            "min": 0
+          },
+          {
+            "name": "stock",
+            "type": "number",
+            "label": "Stock",
+            "default": 0,
+            "min": 0
+          },
+          {
+            "name": "low_stock_threshold",
+            "type": "number",
+            "label": "Low Stock Threshold",
+            "default": 5
+          },
+          {
+            "name": "gst",
+            "type": "number",
+            "label": "Gst",
+            "default": 0,
+            "min": 0,
+            "max": 100
+          },
+          {
+            "name": "category",
+            "type": "text",
+            "label": "Category"
+          }
+        ]
+      }
+    },
+    {
+      "name": "customer",
+      "label": "Customer",
+      "icon": "file",
+      "is_system": true,
+      "schema": {
+        "entity": "customer",
+        "fields": [
+          {
+            "name": "name",
+            "type": "text",
+            "label": "Name",
+            "required": true
+          },
+          {
+            "name": "phone",
+            "type": "text",
+            "label": "Phone"
+          },
+          {
+            "name": "outstanding",
+            "type": "number",
+            "label": "Outstanding",
+            "default": 0
+          },
+          {
+            "name": "address",
+            "type": "textarea",
+            "label": "Address"
+          }
+        ]
+      }
+    },
+    {
+      "name": "invoice",
+      "label": "Invoice",
+      "icon": "file",
+      "is_system": true,
+      "schema": {
+        "entity": "invoice",
+        "fields": [
+          {
+            "name": "invoice_number",
+            "type": "text",
+            "label": "Invoice Number",
+            "required": true
+          },
+          {
+            "name": "items",
+            "type": "json",
+            "label": "Items",
+            "required": true
+          },
+          {
+            "name": "total",
+            "type": "number",
+            "label": "Total",
+            "required": true,
+            "min": 0
+          },
+          {
+            "name": "payment_mode",
+            "type": "select",
+            "label": "Payment Mode",
+            "required": true,
+            "options": [
+              "cash",
+              "upi",
+              "card",
+              "credit"
+            ]
+          },
+          {
+            "name": "customer_id",
+            "type": "relation",
+            "label": "Customer Id",
+            "target": "customer"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ledger",
+      "label": "Ledger",
+      "icon": "file",
+      "is_system": true,
+      "schema": {
+        "entity": "ledger",
+        "fields": [
+          {
+            "name": "customer_id",
+            "type": "relation",
+            "label": "Customer Id",
+            "required": true,
+            "target": "customer"
+          },
+          {
+            "name": "amount",
+            "type": "number",
+            "label": "Amount",
+            "required": true
+          },
+          {
+            "name": "type",
+            "type": "select",
+            "label": "Type",
+            "required": true,
+            "options": [
+              "credit",
+              "payment"
+            ]
+          },
+          {
+            "name": "reference",
+            "type": "text",
+            "label": "Reference"
+          },
+          {
+            "name": "notes",
+            "type": "textarea",
+            "label": "Notes"
+          }
+        ]
+      }
+    },
+    {
+      "name": "stock_adjustment",
+      "label": "Stock Adjustment",
+      "icon": "file",
+      "is_system": true,
+      "schema": {
+        "entity": "stock_adjustment",
+        "fields": [
+          {
+            "name": "product_id",
+            "type": "relation",
+            "label": "Product Id",
+            "required": true,
+            "target": "product"
+          },
+          {
+            "name": "delta",
+            "type": "number",
+            "label": "Delta",
+            "required": true
+          },
+          {
+            "name": "reason",
+            "type": "text",
+            "label": "Reason",
+            "required": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "menu_item",
+      "label": "Menu Item",
+      "icon": "file",
+      "is_system": true,
+      "schema": {
+        "entity": "menu_item",
+        "fields": [
+          {
+            "name": "name",
+            "type": "text",
+            "label": "Name",
+            "required": true
+          },
+          {
+            "name": "price",
+            "type": "number",
+            "label": "Price",
+            "required": true
+          },
+          {
+            "name": "category",
+            "type": "text",
+            "label": "Category"
+          }
+        ]
+      }
+    },
+    {
+      "name": "table",
+      "label": "Table",
+      "icon": "file",
+      "is_system": true,
+      "schema": {
+        "entity": "table",
+        "fields": [
+          {
+            "name": "name",
+            "type": "text",
+            "label": "Name",
+            "required": true
+          },
+          {
+            "name": "seats",
+            "type": "number",
+            "label": "Seats"
+          }
+        ]
+      }
+    },
+    {
+      "name": "order",
+      "label": "Order",
+      "icon": "file",
+      "is_system": true,
+      "schema": {
+        "entity": "order",
+        "fields": [
+          {
+            "name": "table_id",
+            "type": "relation",
+            "label": "Table Id",
+            "target": "table"
+          },
+          {
+            "name": "items",
+            "type": "json",
+            "label": "Items",
+            "required": true
+          },
+          {
+            "name": "total",
+            "type": "number",
+            "label": "Total",
+            "required": true
+          },
+          {
+            "name": "status",
+            "type": "select",
+            "label": "Status",
+            "options": [
+              "open",
+              "paid",
+              "cancelled"
+            ],
+            "default": "open"
+          }
+        ]
+      }
+    },
+    {
+      "name": "kot",
+      "label": "Kot",
+      "icon": "file",
+      "is_system": true,
+      "schema": {
+        "entity": "kot",
+        "fields": [
+          {
+            "name": "order_id",
+            "type": "relation",
+            "label": "Order Id",
+            "required": true,
+            "target": "order"
+          },
+          {
+            "name": "items",
+            "type": "json",
+            "label": "Items",
+            "required": true
+          },
+          {
+            "name": "status",
+            "type": "select",
+            "label": "Status",
+            "options": [
+              "queued",
+              "preparing",
+              "ready"
+            ],
+            "default": "queued"
+          }
+        ]
+      }
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Low stock alert",
+      "trigger": {
+        "type": "record.updated",
+        "entity": "product"
+      },
+      "conditions": [
+        {
+          "field": "stock",
+          "op": "<=",
+          "value": 5
+        }
+      ],
+      "actions": [
+        {
+          "type": "send_whatsapp",
+          "to": "{{tenant.owner_phone}}",
+          "template": "low_stock_alert",
+          "variables": {
+            "product": "{{record.name}}",
+            "stock": "{{record.stock}}"
+          }
+        }
+      ]
+    }
+  ],
+  "dashboard": {
+    "widgets": [
+      {
+        "type": "metric",
+        "title": "Today's sales",
+        "entity": "invoice",
+        "aggregate": "sum",
+        "field": "total"
+      },
+      {
+        "type": "list",
+        "title": "Low stock",
+        "entity": "product",
+        "filter": {
+          "field": "stock",
+          "op": "<=",
+          "value": 5
+        }
+      }
+    ]
+  }
+}
