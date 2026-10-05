@@ -32,7 +32,7 @@ void main() {
     for (final expression in ['eval(1)', 'process.exit()', 'price.toString()', 'items[0]', '1; 2', '1 / 0', 'sum(1e999)', 'unknown', '1 +', 'round(1, 30)', "'open"]) {
       expect(() => ComputedFields.evaluate(expression, {'price': 1, 'items': []}), throwsFormatException, reason: expression);
     }
-    expect(() => ComputedFields.evaluate('(' * 70 + '1' + ')' * 70, {}), throwsFormatException);
+    expect(() => ComputedFields.evaluate('${'(' * 70}1${')' * 70}', {}), throwsFormatException);
     expect(() => ComputedFields.evaluate('1' * 5000, {}), throwsFormatException);
   });
 

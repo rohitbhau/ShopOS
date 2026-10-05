@@ -93,7 +93,7 @@ class LedgerEntries extends Table {
 class OutboxQueue extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get operation => text()(); // insert, update, delete
-  TextColumn get tableName => text()();
+  TextColumn get targetTable => text().named('table_name')();
   TextColumn get recordId => text()();
   TextColumn get dataJson => text()(); // JSON payload
   IntColumn get retryCount => integer().withDefault(const Constant(0))();
@@ -164,7 +164,7 @@ class AppDatabase extends _$AppDatabase {
     return (select(products)
           ..where((p) =>
               p.tenantId.equals(tenantId) &
-              p.stock.isSmallerOrEqualValue(p.minStock)))
+              p.stock.isSmallerOrEqual(p.minStock)))
         .get();
   }
 
@@ -328,10 +328,12 @@ class AppDatabase extends _$AppDatabase {
     return (delete(outboxQueue)..where((o) => o.id.equals(id))).go();
   }
 
-  Future<void> updateOutboxItemRetry(int id, String errorMessage) {
-    return (update(outboxQueue)..where((o) => o.id.equals(id))).write(
+  Future<void> updateOutboxItemRetry(int id, String errorMessage) async {
+    final item = await (select(outboxQueue)..where((o) => o.id.equals(id))).getSingleOrNull();
+    if (item == null) return;
+    await (update(outboxQueue)..where((o) => o.id.equals(id))).write(
       OutboxQueueCompanion(
-        retryCount: Value(retryCount + 1),
+        retryCount: Value(item.retryCount + 1),
         lastAttemptAt: Value(DateTime.now()),
         errorMessage: Value(errorMessage),
       ),

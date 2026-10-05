@@ -11,7 +11,7 @@ export function configuration() {
 }
 export function requireOrigin(request: NextRequest) {
   const origin = request.headers.get('origin');
-  const expected = process.env.ADMIN_ORIGIN || request.nextUrl.origin;
+  const expected = process.env.ADMIN_ORIGIN || `${request.nextUrl.protocol}//${request.headers.get('host') || request.nextUrl.host}`;
   if (!origin || origin !== expected) throw new ApiError('Request origin rejected.', 403);
 }
 export async function supabase(path: string, init: RequestInit = {}, token?: string): Promise<Response> {
@@ -27,7 +27,7 @@ export function setTokens(response: NextResponse, tokens: Tokens) {
 }
 export function clearTokens(response: NextResponse) { response.cookies.delete('shopos_admin_access'); response.cookies.delete('shopos_admin_refresh'); }
 export async function session(): Promise<{ user: AuthUser; token: string; refreshed?: Tokens }> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   let token = cookieStore.get('shopos_admin_access')?.value;
   let user: AuthUser | undefined, refreshed: Tokens | undefined;
   if (token) {

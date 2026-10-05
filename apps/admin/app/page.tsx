@@ -1,7 +1,7 @@
-import Console from '../components/Console';
+import ShopWorkspace from '../components/shop/ShopWorkspace';
 import { configuration } from '../src/server';
 
 export const dynamic = 'force-dynamic';
 export default function AdminPage() {
-  return <Console mode={configuration().mode} />;
+  return <ShopWorkspace mode={configuration().mode} />;
 }

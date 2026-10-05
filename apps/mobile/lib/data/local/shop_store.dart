@@ -173,9 +173,9 @@ class ShopStore extends ChangeNotifier {
         final index=products.indexWhere((item)=>item.id==line.product.id);
         products[index]=products[index].copyWith(stock:products[index].stock-line.quantity);
         queued.add(_mutation('product','adjust',{'id':line.product.id,'field':'stock','delta':-line.quantity}));
-        _addRecord('stock_adjustment',{'product_id':line.product.id,'delta':-line.quantity,'reason':'Sale','invoice_id':invoice.id},queued);
+        if (role != ShopRole.cashier) _addRecord('stock_adjustment',{'product_id':line.product.id,'delta':-line.quantity,'reason':'Sale','invoice_id':invoice.id},queued);
       }
-      if(paymentMode=='credit') {
+      if(paymentMode=='credit' && invoice.total > 0) {
         final index=customers.indexWhere((item)=>item.id==customer!.id);
         customers[index]=customers[index].copyWith(outstanding:money(customers[index].outstanding+invoice.total));
         queued.add(_mutation('customer','adjust',{'id':customer!.id,'field':'outstanding','delta':invoice.total}));

@@ -142,7 +142,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
           // Summary card
           Card(
             margin: const EdgeInsets.all(16),
-            color: AppTheme.primaryColor.withOpacity(0.1),
+            color: AppTheme.primaryColor.withValues(alpha: 0.1),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -309,8 +309,8 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                                 },
                                 leading: CircleAvatar(
                                   backgroundColor: customer.outstanding > 0
-                                      ? AppTheme.errorColor.withOpacity(0.1)
-                                      : AppTheme.successColor.withOpacity(0.1),
+                                      ? AppTheme.errorColor.withValues(alpha: 0.1)
+                                      : AppTheme.successColor.withValues(alpha: 0.1),
                                   child: Icon(
                                     Icons.person,
                                     color: customer.outstanding > 0
@@ -332,7 +332,7 @@ class _CustomerListScreenState extends ConsumerState<CustomerListScreen> {
                                           vertical: 2,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: AppTheme.errorColor.withOpacity(0.1),
+                                          color: AppTheme.errorColor.withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(4),
                                         ),
                                         child: Text(

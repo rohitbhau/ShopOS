@@ -317,7 +317,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
           ..._topProducts.take(3).map((p) => Card(
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                    backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
                     child: const Icon(Icons.star, color: AppTheme.primaryColor),
                   ),
                   title: Text(p.name),
@@ -506,14 +506,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
             child: Padding(
               padding: const EdgeInsets.all(32),
               child: Column(
-                children: [
+                children: const [
                   Icon(
                     Icons.check_circle,
                     size: 64,
                     color: AppTheme.successColor,
                   ),
-                  const SizedBox(height: 16),
-                  const Text('All products are well stocked!'),
+                  SizedBox(height: 16),
+                  Text('All products are well stocked!'),
                 ],
               ),
             ),
@@ -522,7 +522,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
           ..._lowStockItems.map((item) => Card(
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: AppTheme.warningColor.withOpacity(0.1),
+                    backgroundColor: AppTheme.warningColor.withValues(alpha: 0.1),
                     child: const Icon(
                       Icons.warning_amber,
                       color: AppTheme.warningColor,

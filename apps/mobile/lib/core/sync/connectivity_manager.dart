@@ -27,7 +27,7 @@ class ConnectivityManager extends ChangeNotifier {
       final result = await _connectivity.checkConnectivity();
       _updateConnectionStatus(result);
     } catch (e) {
-      print('Failed to check connectivity: $e');
+      debugPrint('Failed to check connectivity: $e');
       _isOnline = false;
       notifyListeners();
     }
@@ -40,7 +40,7 @@ class ConnectivityManager extends ChangeNotifier {
     if (!wasOnline && _isOnline) {
       // Just came online
       _lastOnlineTime = DateTime.now();
-      print('🟢 Network connected');
+      debugPrint('🟢 Network connected');
       
       // Trigger all registered callbacks
       for (final callback in _onlineCallbacks) {
@@ -49,7 +49,7 @@ class ConnectivityManager extends ChangeNotifier {
     } else if (wasOnline && !_isOnline) {
       // Just went offline
       _lastOfflineTime = DateTime.now();
-      print('🔴 Network disconnected');
+      debugPrint('🔴 Network disconnected');
     }
 
     notifyListeners();

@@ -410,66 +410,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('Select Language'),
-                  content: Column(
+                  content: RadioGroup<String>(groupValue: _selectedLanguage, onChanged: (value) { if(value != null) { _changeLanguage(value); Navigator.pop(context); } }, child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       RadioListTile<String>(
                         title: const Text('English'),
                         value: 'en',
-                        groupValue: _selectedLanguage,
-                        onChanged: (value) {
-                          if (value != null) {
-                            _changeLanguage(value);
-                            Navigator.pop(context);
-                          }
-                        },
                       ),
                       RadioListTile<String>(
                         title: const Text('हिन्दी (Hindi)'),
                         value: 'hi',
-                        groupValue: _selectedLanguage,
-                        onChanged: (value) {
-                          if (value != null) {
-                            _changeLanguage(value);
-                            Navigator.pop(context);
-                          }
-                        },
                       ),
                       RadioListTile<String>(
                         title: const Text('தமிழ் (Tamil)'),
                         value: 'ta',
-                        groupValue: _selectedLanguage,
-                        onChanged: (value) {
-                          if (value != null) {
-                            _changeLanguage(value);
-                            Navigator.pop(context);
-                          }
-                        },
                       ),
                       RadioListTile<String>(
                         title: const Text('తెలుగు (Telugu)'),
                         value: 'te',
-                        groupValue: _selectedLanguage,
-                        onChanged: (value) {
-                          if (value != null) {
-                            _changeLanguage(value);
-                            Navigator.pop(context);
-                          }
-                        },
                       ),
                       RadioListTile<String>(
                         title: const Text('বাংলা (Bengali)'),
                         value: 'bn',
-                        groupValue: _selectedLanguage,
-                        onChanged: (value) {
-                          if (value != null) {
-                            _changeLanguage(value);
-                            Navigator.pop(context);
-                          }
-                        },
                       ),
                     ],
-                  ),
+                  )),
                 ),
               );
             },

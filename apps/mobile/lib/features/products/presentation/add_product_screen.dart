@@ -298,7 +298,7 @@ class _AddProductScreenState extends ConsumerState<AddProductScreen> {
 
             // GST Rate
             DropdownButtonFormField<String>(
-              value: _selectedGst,
+              initialValue: _selectedGst,
               decoration: const InputDecoration(
                 labelText: 'GST Rate',
                 prefixIcon: Icon(Icons.percent),

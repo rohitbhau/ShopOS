@@ -268,7 +268,7 @@ Payment: ${_invoiceData!['payment_mode'].toString().toUpperCase()}
 
             // Payment info
             Card(
-              color: _getColorForPaymentMode(paymentMode).withOpacity(0.1),
+              color: _getColorForPaymentMode(paymentMode).withValues(alpha: 0.1),
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(

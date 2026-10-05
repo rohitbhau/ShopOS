@@ -272,15 +272,6 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
 
       // If credit sale, update customer outstanding
       if (_paymentMode == 'credit' && _selectedCustomerId != null) {
-        // Get customer entity_id
-        final customerEntityResponse = await supabase
-            .from('entities')
-            .select('id')
-            .eq('name', 'customer')
-            .single();
-
-        final customerEntityId = customerEntityResponse['id'];
-
         // Get customer record
         final customerId = _selectedCustomerId!; // Non-null assertion safe here
         final customerResponse = await supabase
@@ -353,7 +344,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                 Text('Payment: ${_paymentMode.toUpperCase()}'),
                 if (_paymentMode == 'credit')
                   Text(
-                    'Outstanding added to ${_selectedCustomerName}',
+                    'Outstanding added to $_selectedCustomerName',
                     style: const TextStyle(
                       color: AppTheme.errorColor,
                       fontSize: 12,
@@ -647,7 +638,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 4,
                     offset: const Offset(0, -2),
                   ),

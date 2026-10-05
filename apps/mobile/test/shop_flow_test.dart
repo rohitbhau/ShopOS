@@ -27,24 +27,25 @@ class RecordingGateway implements RemoteSyncGateway {
 
 void main() {
   group('ShopStore end-to-end sale flow', () {
-    test('onboards, creates a product, and saves a credit sale offline', () {
+    test('onboards, creates a product, and saves a credit sale offline', () async {
       final store = ShopStore();
 
-      store.createShop('Maya General Store', 'retail_basic');
-      store.addProduct({'name': 'Tea', 'price': '120', 'stock': '6'});
+      await store.createShop('Maya General Store', 'retail_basic');
+      await store.addProduct({'name': 'Tea', 'price': '120', 'stock': '6'});
+      await store.addCustomer('Priya Sharma', '9876543211');
       final product = store.products.last;
       final customer = store.customers.first;
       store.addToCart(product);
 
-      final invoice = store.checkout(paymentMode: 'credit', customer: customer);
+      final invoice = await store.checkout(paymentMode: 'credit', customer: customer);
 
       expect(store.isOnboarded, isTrue);
       expect(invoice.total, 120);
       expect(store.invoices, hasLength(1));
       expect(store.products.last.stock, 5);
       expect(store.customers.first.outstanding, 120);
-      expect(store.outbox.map((item) => item.entity),
-          containsAllInOrder(['tenant', 'product', 'invoice']));
+      final mutations = store.outbox.expand((batch) => (batch.payload['mutations'] as List).cast<Map<String,dynamic>>());
+      expect(mutations.map((item) => item['entity']), containsAllInOrder(['product', 'customer', 'invoice']));
     });
   });
 
@@ -76,17 +77,21 @@ void main() {
 
     test('retains an action and increments attempts after a network failure',
         () async {
-      final outbox = MemoryOutboxStore();
+      var now = DateTime(2026, 1, 1);
+      final outbox = MemoryOutboxStore(now: () => now);
       final gateway = RecordingGateway()..failuresRemaining = 1;
       await outbox.add(QueuedMutation(
           id: 'retry-me',
           entity: 'invoice',
           action: 'create',
           payload: {},
-          createdAt: DateTime.now()));
-      final engine = SyncEngine(outbox: outbox, gateway: gateway);
+          createdAt: now));
+      final engine = SyncEngine(outbox: outbox, gateway: gateway, now: () => now);
 
       await engine.syncNow();
+      expect(await outbox.count(), 1);
+      expect(await outbox.pending(), isEmpty);
+      now = now.add(const Duration(seconds: 5));
       final pending = await outbox.pending();
 
       expect(pending.single.id, 'retry-me');

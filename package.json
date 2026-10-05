@@ -1,0 +1,12 @@
+{
+  "name": "shopos",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix apps/admin run dev",
+    "build": "npm --prefix apps/admin run build",
+    "start": "npm --prefix apps/admin run start",
+    "typecheck": "npm --prefix apps/admin run typecheck",
+    "test": "npm --prefix apps/admin test",
+    "test:e2e": "npm --prefix apps/admin run test:e2e"
+  }
+}

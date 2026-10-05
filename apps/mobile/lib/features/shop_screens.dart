@@ -60,7 +60,17 @@ class _HomeScreenState extends State<HomeScreen> {
       if(can(store.role,ShopPermission.manageProducts))ListTile(leading:const Icon(Icons.view_module),title:const Text('Shop modules'),onTap:(){Navigator.pop(context);open(ModulesPage(store:store));}),
       if(can(store.role,ShopPermission.manageStaff))ListTile(leading:const Icon(Icons.group),title:const Text('Staff'),onTap:(){Navigator.pop(context);open(StaffPage(store:store,client:widget.client));}),
       ListTile(leading:const Icon(Icons.workspace_premium),title:const Text('Subscription'),onTap:(){Navigator.pop(context);open(SubscriptionPage(store:store,client:widget.client));}),
-    ]))),body:IndexedStack(index:selected,children:pages),bottomNavigationBar:NavigationBar(selectedIndex:selected,onDestinationSelected:(index)=>setState(()=>selected=index),destinations:const[
+    ]))),body:LayoutBuilder(builder:(context,constraints){
+      final body=IndexedStack(index:selected,children:pages);
+      if(constraints.maxWidth<840)return body;
+      return Row(children:[NavigationRail(selectedIndex:selected,onDestinationSelected:(index)=>setState(()=>selected=index),labelType:NavigationRailLabelType.all,destinations:const[
+        NavigationRailDestination(icon:Icon(Icons.dashboard_outlined),label:Text('Overview')),
+        NavigationRailDestination(icon:Icon(Icons.inventory_2_outlined),label:Text('Products')),
+        NavigationRailDestination(icon:Icon(Icons.point_of_sale),label:Text('Sell')),
+        NavigationRailDestination(icon:Icon(Icons.people_outline),label:Text('Customers')),
+        NavigationRailDestination(icon:Icon(Icons.settings_outlined),label:Text('Settings')),
+      ]),const VerticalDivider(width:1),Expanded(child:Center(child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:1200),child:body)))]);
+    }),bottomNavigationBar:MediaQuery.sizeOf(context).width>=840?null:NavigationBar(selectedIndex:selected,onDestinationSelected:(index)=>setState(()=>selected=index),destinations:const[
       NavigationDestination(icon:Icon(Icons.dashboard_outlined),label:'Home'),NavigationDestination(icon:Icon(Icons.inventory_2_outlined),label:'Products'),
       NavigationDestination(icon:Icon(Icons.point_of_sale),label:'Sell'),NavigationDestination(icon:Icon(Icons.people_outline),label:'Customers'),NavigationDestination(icon:Icon(Icons.settings_outlined),label:'Settings'),
     ]));
@@ -70,24 +80,25 @@ class _HomeScreenState extends State<HomeScreen> {
 class DashboardPage extends StatelessWidget {
   const DashboardPage({required this.store,required this.onSell,this.client,super.key});
   final ShopStore store;final VoidCallback onSell;final SupabaseClient? client;
-  @override Widget build(BuildContext context)=>ListView(padding:const EdgeInsets.all(16),children:[
-    Text('Your shop at a glance',style:Theme.of(context).textTheme.headlineSmall),const SizedBox(height:16),
-    if(DateTime.now().isBefore(store.trialEndsAt))Card(child:ListTile(leading:const Icon(Icons.timer_outlined),title:Text('${store.trialEndsAt.difference(DateTime.now()).inDays+1} days left in your trial'))),
-    if(can(store.role,ShopPermission.viewReports))...[
-      MetricCard(label:'Today’s sales',value:rupees(store.todaySales),icon:Icons.trending_up),
-      MetricCard(label:'Customer outstanding',value:rupees(store.totalOutstanding),icon:Icons.account_balance_wallet),
-    ],
-    MetricCard(label:'Low stock',value:'${store.lowStockCount} products',icon:Icons.warning_amber),const SizedBox(height:16),
-    if(can(store.role,ShopPermission.createInvoice))FilledButton.icon(onPressed:onSell,icon:const Icon(Icons.add_shopping_cart),label:const Text('Create a bill')),
-    const SizedBox(height:20),Text('Recent bills',style:Theme.of(context).textTheme.titleLarge),
-    if(store.invoices.isEmpty)const ListTile(title:Text('No bills yet. Add products, then create your first sale.')),
-    ...store.invoices.take(5).map((invoice)=>ListTile(title:Text(invoice.number),subtitle:Text(invoice.paymentMode.toUpperCase()),trailing:Text(rupees(invoice.total)),onTap:()=>openInvoice(context,store,invoice,client:client))),
+  @override Widget build(BuildContext context)=>ListView(padding:const EdgeInsets.all(22),children:[
+    const SizedBox(height:10),Text('A good day starts here.',style:Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight:FontWeight.w600)),const SizedBox(height:8),
+    Text('A clear view of your shop. A little less to keep track of.',style:TextStyle(color:Theme.of(context).colorScheme.onSurfaceVariant)),const SizedBox(height:24),
+    if(store.demo)Card(color:Theme.of(context).colorScheme.primaryContainer.withValues(alpha:.35),child:const ListTile(leading:Icon(Icons.check_circle_outline),title:Text('Your local demo workspace'),subtitle:Text('Products, sales, and customers are saved on this device.'))),
+    LayoutBuilder(builder:(context,constraints){final columns=constraints.maxWidth>=650?3:2;final cards=[
+      if(can(store.role,ShopPermission.viewReports))MetricCard(label:'Today’s sales',value:rupees(store.todaySales),icon:Icons.trending_up),
+      if(can(store.role,ShopPermission.viewReports))MetricCard(label:'Customer balance',value:rupees(store.totalOutstanding),icon:Icons.account_balance_wallet_outlined),
+      MetricCard(label:'Low stock',value:'${store.lowStockCount} products',icon:Icons.inventory_2_outlined),
+    ];return Wrap(spacing:12,runSpacing:4,children:cards.map((card)=>SizedBox(width:(constraints.maxWidth-12*(columns-1))/columns,child:card)).toList());}),
+    const SizedBox(height:24),if(can(store.role,ShopPermission.createInvoice))FilledButton.icon(onPressed:onSell,icon:const Icon(Icons.add_shopping_cart),label:const Text('Create a new sale')),
+    const SizedBox(height:30),Row(children:[Expanded(child:Text('Recent invoices',style:Theme.of(context).textTheme.titleLarge)),TextButton(onPressed:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>InvoicesPage(store:store,client:client))),child:const Text('View all'))]),
+    if(store.invoices.isEmpty)const Card(child:Padding(padding:EdgeInsets.all(24),child:Text('Ready for your first sale. Add products, then create a bill.'))),
+    ...store.invoices.take(5).map((invoice)=>Card(child:ListTile(leading:const CircleAvatar(child:Icon(Icons.receipt_long_outlined)),title:Text(invoice.number,maxLines:1,overflow:TextOverflow.ellipsis),subtitle:Text('${invoice.customerName??'Walk-in customer'} · ${invoice.paymentMode.toUpperCase()}'),trailing:Text(rupees(invoice.total)),onTap:()=>openInvoice(context,store,invoice,client:client)))),
   ]);
 }
 class MetricCard extends StatelessWidget {
   const MetricCard({required this.label,required this.value,required this.icon,super.key});
   final String label,value;final IconData icon;
-  @override Widget build(BuildContext context)=>Card(child:ListTile(leading:Icon(icon),title:Text(label),subtitle:Text(value,style:Theme.of(context).textTheme.titleLarge)));
+  @override Widget build(BuildContext context)=>Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Icon(icon,color:Theme.of(context).colorScheme.primary,size:24),const SizedBox(height:16),Text(label,style:Theme.of(context).textTheme.bodySmall),const SizedBox(height:7),Text(value,style:Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight:FontWeight.w600))])));
 }
 
 class ProductsPage extends StatefulWidget {
@@ -98,7 +109,8 @@ class _ProductsPageState extends State<ProductsPage> {
   String query='',sort='name';bool lowOnly=false;
   Future<void> edit([Product? product]) async {
     final store=widget.store;
-    final data=await editRecord(context,title:product==null?'Add product':'Edit product',entity:'product',fields:store.schemas['product']?['fields']??productFields,initial:product?.toJson(),store:store);
+    final fields=[...productFields,...(store.schemas['product']?['fields'] as List? ?? []).where((field)=>!{...productFields.map((f)=>f['name']),'gst','low_stock_threshold','sku'}.contains(field['name']))];
+    final data=await editRecord(context,title:product==null?'Add product':'Edit product',entity:'product',fields:fields,initial:product?.toJson(),store:store);
     if(data!=null&&mounted)await perform(context,()=>store.saveProduct(data,id:product?.id));
   }
   @override Widget build(BuildContext context){

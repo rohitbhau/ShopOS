@@ -10,7 +10,7 @@ import 'package:shopos/lowcode/field_registry.dart';
 import 'package:shopos/lowcode/form_renderer.dart';
 
 void main() {
-  setUp(registerBuiltinFieldTypes);
+  setUp(() { registerBuiltinFieldTypes(); FilePicker.platform = _FilePicker(); });
 
   Future<void> form(WidgetTester tester, List<FieldSchema> fields, {
     Map<String, dynamic>? data,
@@ -106,7 +106,7 @@ void main() {
 
   testWidgets('readonly empty fields cannot be edited or submitted', (tester) async {
     await form(tester, const [FieldSchema(name: 'name', type: 'text'), FieldSchema(name: 'active', type: 'bool')], readonly: true);
-    expect(tester.widget<TextFormField>(find.byType(TextFormField)).readOnly, true);
+    expect(tester.widget<EditableText>(find.byType(EditableText)).readOnly, true);
     expect(tester.widget<SwitchListTile>(find.byType(SwitchListTile)).onChanged, isNull);
     expect(find.text('Save'), findsNothing);
   });

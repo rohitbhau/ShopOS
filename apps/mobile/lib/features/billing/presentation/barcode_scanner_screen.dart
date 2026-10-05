@@ -116,7 +116,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
                       vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
+                      color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Text(
@@ -141,7 +141,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
                       style: TextStyle(color: Colors.white),
                     ),
                     style: TextButton.styleFrom(
-                      backgroundColor: Colors.black.withOpacity(0.7),
+                      backgroundColor: Colors.black.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -152,7 +152,7 @@ class _BarcodeScannerScreenState extends ConsumerState<BarcodeScannerScreen> {
           // Processing indicator
           if (_isProcessing)
             Container(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               child: const Center(
                 child: CircularProgressIndicator(color: Colors.white),
               ),
@@ -168,7 +168,7 @@ class ScannerOverlayPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black.withOpacity(0.5)
+      ..color = Colors.black.withValues(alpha: 0.5)
       ..style = PaintingStyle.fill;
 
     final scanAreaSize = size.width * 0.7;
@@ -192,7 +192,7 @@ class ScannerOverlayPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4;
 
-    final bracketLength = 30.0;
+    const bracketLength = 30.0;
 
     // Top-left corner
     canvas.drawLine(

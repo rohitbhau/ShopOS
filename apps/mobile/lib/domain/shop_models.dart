@@ -2,7 +2,8 @@ import 'package:uuid/uuid.dart';
 
 String newId() => const Uuid().v4();
 double money(num value) => (value * 100).round() / 100;
-double number(dynamic value, [double fallback = 0]) => value is num ? value.toDouble() : double.tryParse('$value') ?? fallback;
+double number(dynamic value, [double fallback = 0]) => parseNumber(value, fallback);
+double parseNumber(dynamic value, [double fallback = 0]) => value is num ? value.toDouble() : double.tryParse('$value') ?? fallback;
 
 class Product {
   const Product({required this.id, required this.name, required this.price, required this.stock,
@@ -18,9 +19,9 @@ class Product {
     id: data['id'] as String, name: '${data['name'] ?? ''}', price: number(data['price']),
     stock: number(data['stock']).toInt(), cost: number(data['cost']), gst: number(data['gst_rate'] ?? data['gst']),
     barcode: (data['sku'] ?? data['barcode'])?.toString(), category: '${data['category'] ?? 'General'}',
-    minStock: number(data['min_stock'], 5).toInt(), extra: data);
+    minStock: number(data['min_stock'] ?? data['low_stock_threshold'], 5).toInt(), extra: data);
   Map<String, dynamic> toJson() => {...extra, 'id': id, 'name': name, 'price': price, 'stock': stock, 'cost': cost,
-    'gst_rate': gst, 'barcode': barcode, 'sku': barcode, 'category': category, 'min_stock': minStock};
+    'gst_rate': gst, 'gst': gst, 'barcode': barcode, 'sku': barcode, 'category': category, 'min_stock': minStock, 'low_stock_threshold': minStock};
 }
 
 class Customer {
@@ -84,8 +85,8 @@ class Invoice {
   factory Invoice.fromJson(Map<String, dynamic> data) => Invoice(id: data['id'] as String, number: '${data['invoice_number']}',
     createdAt: DateTime.parse(data['created_at'] ?? data['invoice_date']),
     lines: (data['items'] as List? ?? []).map((line) => CartLine.fromJson(Map<String, dynamic>.from(line))).toList(),
-    total: number(data['total']), paymentMode: '${data['payment_mode']}', customerId: data['customer_id'],
-    customerName: data['customer_name'], discount: number(data['discount_amount']), tax: number(data['tax_amount']), createdBy: data['created_by']);
+    total: parseNumber(data['total']), paymentMode: '${data['payment_mode']}', customerId: data['customer_id'],
+    customerName: data['customer_name'], discount: parseNumber(data['discount_amount']), tax: parseNumber(data['tax_amount']), createdBy: data['created_by']);
 }
 
 class QueuedMutation {

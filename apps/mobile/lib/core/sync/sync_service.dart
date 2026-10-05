@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 // Sync service - handles push/pull operations between local DB and Supabase
 import 'dart:convert';
+import 'package:drift/drift.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../database/app_database.dart';
 import 'package:uuid/uuid.dart';
@@ -63,17 +65,17 @@ class SyncService {
 
         switch (item.operation) {
           case 'insert':
-            await _supabase.from(item.tableName).insert(data);
+            await _supabase.from(item.targetTable).insert(data);
             break;
           case 'update':
             await _supabase
-                .from(item.tableName)
+                .from(item.targetTable)
                 .update(data)
                 .eq('id', item.recordId);
             break;
           case 'delete':
             await _supabase
-                .from(item.tableName)
+                .from(item.targetTable)
                 .delete()
                 .eq('id', item.recordId);
             break;
@@ -87,7 +89,7 @@ class SyncService {
         
         // Skip items with more than 5 retries
         if (item.retryCount >= 5) {
-          print('Outbox item ${item.id} failed after 5 retries: $e');
+          debugPrint('Outbox item ${item.id} failed after 5 retries: $e');
         }
       }
     }
@@ -132,10 +134,10 @@ class SyncService {
         // Mark as synced
         await _db.updateProduct(product.copyWith(
           isDirty: false,
-          lastSyncedAt: DateTime.now(),
+          lastSyncedAt: Value(DateTime.now()),
         ));
       } catch (e) {
-        print('Failed to push product ${product.id}: $e');
+        debugPrint('Failed to push product ${product.id}: $e');
       }
     }
 
@@ -169,10 +171,10 @@ class SyncService {
 
         await _db.updateCustomer(customer.copyWith(
           isDirty: false,
-          lastSyncedAt: DateTime.now(),
+          lastSyncedAt: Value(DateTime.now()),
         ));
       } catch (e) {
-        print('Failed to push customer ${customer.id}: $e');
+        debugPrint('Failed to push customer ${customer.id}: $e');
       }
     }
 
@@ -212,10 +214,10 @@ class SyncService {
 
         await _db.updateInvoice(invoice.copyWith(
           isDirty: false,
-          lastSyncedAt: DateTime.now(),
+          lastSyncedAt: Value(DateTime.now()),
         ));
       } catch (e) {
-        print('Failed to push invoice ${invoice.id}: $e');
+        debugPrint('Failed to push invoice ${invoice.id}: $e');
       }
     }
   }
@@ -237,7 +239,7 @@ class SyncService {
         .select()
         .eq('tenant_id', tenantId)
         .eq('entity_id', entityId)
-        .is_('deleted_at', null);
+        .isFilter('deleted_at', null);
 
     // Only pull changes since last sync if available
     if (lastSync != null) {
@@ -289,7 +291,7 @@ class SyncService {
         .select()
         .eq('tenant_id', tenantId)
         .eq('entity_id', entityId)
-        .is_('deleted_at', null);
+        .isFilter('deleted_at', null);
 
     if (lastSync != null) {
       query = query.gte('updated_at', lastSync.toIso8601String());
@@ -357,7 +359,7 @@ class SyncService {
         .select()
         .eq('tenant_id', tenantId)
         .eq('entity_id', entityId)
-        .is_('deleted_at', null);
+        .isFilter('deleted_at', null);
 
     if (lastSync != null) {
       query = query.gte('updated_at', lastSync.toIso8601String());
@@ -401,7 +403,7 @@ class SyncService {
     final item = OutboxQueueData(
       id: 0, // Auto-increment
       operation: operation,
-      tableName: tableName,
+      targetTable: tableName,
       recordId: recordId,
       dataJson: jsonEncode(data),
       retryCount: 0,

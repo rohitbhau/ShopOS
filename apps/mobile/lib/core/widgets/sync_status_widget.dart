@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/app_providers.dart';
 import '../theme/app_theme.dart';
+import '../sync/connectivity_manager.dart';
 
 class SyncStatusWidget extends ConsumerWidget {
   final bool compact;
@@ -81,8 +82,8 @@ class SyncStatusWidget extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: isOnline
-            ? AppTheme.successColor.withOpacity(0.1)
-            : Colors.orange.withOpacity(0.1),
+            ? AppTheme.successColor.withValues(alpha: 0.1)
+            : Colors.orange.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isOnline ? AppTheme.successColor : Colors.orange,

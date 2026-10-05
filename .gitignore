@@ -96,6 +96,9 @@ pnpm-debug.log*
 # Test coverage
 coverage/
 *.lcov
+apps/admin/test-results/
+apps/admin/playwright-report/
+apps/mobile/analysis-*.txt
 .nyc_output/
 
 # Temporary files

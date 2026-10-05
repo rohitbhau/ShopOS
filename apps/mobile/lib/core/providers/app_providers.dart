@@ -1,5 +1,6 @@
 // App-wide providers for dependency injection
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../database/app_database.dart';
 import '../sync/sync_service.dart';
@@ -31,18 +32,18 @@ final connectivityManagerProvider = ChangeNotifierProvider<ConnectivityManager>(
   // Auto-sync when coming back online
   final syncService = ref.read(syncServiceProvider);
   manager.registerOnlineCallback(() async {
-    print('Auto-syncing after coming online...');
+    debugPrint('Auto-syncing after coming online...');
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
         final tenantId = user.userMetadata?['tenant_id'];
         if (tenantId != null) {
           await syncService.sync(tenantId);
-          print('✅ Auto-sync completed');
+          debugPrint('✅ Auto-sync completed');
         }
       }
     } catch (e) {
-      print('❌ Auto-sync failed: $e');
+      debugPrint('❌ Auto-sync failed: $e');
     }
   });
   
@@ -69,7 +70,7 @@ final currentTenantIdProvider = FutureProvider<String?>((ref) async {
         .single();
     return membership['tenant_id'] as String;
   } catch (e) {
-    print('Failed to get tenant_id: $e');
+    debugPrint('Failed to get tenant_id: $e');
     return null;
   }
 });

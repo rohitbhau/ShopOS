@@ -1,5 +1,6 @@
+import 'package:flutter/foundation.dart';
 // Product repository - offline-first data access layer
-import 'dart:convert';
+import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/sync/sync_service.dart';
@@ -72,7 +73,7 @@ class ProductRepository {
       try {
         await _syncToServer(product);
       } catch (e) {
-        print('Failed to sync product immediately, will sync later: $e');
+        debugPrint('Failed to sync product immediately, will sync later: $e');
         // Product is already saved locally and marked dirty
       }
     }
@@ -96,13 +97,13 @@ class ProductRepository {
   }) async {
     final updated = product.copyWith(
       name: name ?? product.name,
-      sku: sku ?? product.sku,
+      sku: Value(sku ?? product.sku),
       price: price ?? product.price,
-      cost: cost ?? product.cost,
+      cost: Value(cost ?? product.cost),
       stock: stock ?? product.stock,
-      minStock: minStock ?? product.minStock,
-      category: category ?? product.category,
-      unit: unit ?? product.unit,
+      minStock: Value(minStock ?? product.minStock),
+      category: Value(category ?? product.category),
+      unit: Value(unit ?? product.unit),
       gstRate: gstRate ?? product.gstRate,
       isActive: isActive ?? product.isActive,
       updatedAt: DateTime.now(),
@@ -116,7 +117,7 @@ class ProductRepository {
       try {
         await _syncToServer(updated);
       } catch (e) {
-        print('Failed to sync product immediately, will sync later: $e');
+        debugPrint('Failed to sync product immediately, will sync later: $e');
       }
     }
 

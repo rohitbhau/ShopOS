@@ -246,8 +246,8 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
                 Card(
                   margin: const EdgeInsets.all(16),
                   color: _outstanding > 0
-                      ? AppTheme.errorColor.withOpacity(0.1)
-                      : AppTheme.successColor.withOpacity(0.1),
+                      ? AppTheme.errorColor.withValues(alpha: 0.1)
+                      : AppTheme.successColor.withValues(alpha: 0.1),
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Column(
@@ -324,8 +324,8 @@ class _CustomerDetailScreenState extends ConsumerState<CustomerDetailScreen> {
                               child: ListTile(
                                 leading: CircleAvatar(
                                   backgroundColor: isPayment
-                                      ? AppTheme.successColor.withOpacity(0.1)
-                                      : AppTheme.errorColor.withOpacity(0.1),
+                                      ? AppTheme.successColor.withValues(alpha: 0.1)
+                                      : AppTheme.errorColor.withValues(alpha: 0.1),
                                   child: Icon(
                                     isPayment ? Icons.arrow_downward : Icons.arrow_upward,
                                     color: isPayment

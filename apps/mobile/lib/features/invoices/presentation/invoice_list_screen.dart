@@ -166,7 +166,7 @@ class _InvoiceListScreenState extends ConsumerState<InvoiceListScreen> {
           // Summary card
           Card(
             margin: const EdgeInsets.all(16),
-            color: AppTheme.primaryColor.withOpacity(0.1),
+            color: AppTheme.primaryColor.withValues(alpha: 0.1),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -300,7 +300,7 @@ class _InvoiceListScreenState extends ConsumerState<InvoiceListScreen> {
                                 leading: CircleAvatar(
                                   backgroundColor: _getColorForPaymentMode(
                                     invoice.paymentMode,
-                                  ).withOpacity(0.1),
+                                  ).withValues(alpha: 0.1),
                                   child: Icon(
                                     _getIconForPaymentMode(invoice.paymentMode),
                                     color: _getColorForPaymentMode(invoice.paymentMode),
@@ -344,7 +344,7 @@ class _InvoiceListScreenState extends ConsumerState<InvoiceListScreen> {
                                       decoration: BoxDecoration(
                                         color: _getColorForPaymentMode(
                                           invoice.paymentMode,
-                                        ).withOpacity(0.1),
+                                        ).withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
@@ -380,7 +380,7 @@ class _InvoiceListScreenState extends ConsumerState<InvoiceListScreen> {
           _filterInvoices();
         });
       },
-      selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+      selectedColor: AppTheme.primaryColor.withValues(alpha: 0.2),
       checkmarkColor: AppTheme.primaryColor,
     );
   }
